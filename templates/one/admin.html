@@ -1,0 +1,41 @@
+{% extends "design.html" %}
+{% block title %} Admin Dashboard {% endblock title %}
+{% block content %}
+
+<div id="carouselExample" class="carousel slide mt-4" data-bs-ride="carousel">
+  <div class="carousel-inner">
+    <div class="carousel-item active">
+      <img src="/static/bootstrap/images/pexels-cesarperez209-733745.jpg" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="...">
+    </div>
+    <div class="carousel-item">
+      <img src="/static/bootstrap/images/pexels-maxfrancis-2246476.jpg" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="...">
+    </div>
+    <div class="carousel-item">
+      <img src="/static/bootstrap/images/pexels-pok-rie-33563-2049422.jpg" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="...">
+    </div>
+  </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
+</div>
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Welcome, {{ username }}</h2>
+  <div class="row">
+    <div class="col-md-6 p-4 bg-success text-white text-center rounded-3">
+      <h3>Analytics</h3>
+      <p>Company statistics and reports can go here.</p>
+    </div>
+    <div class="col-md-6 p-4 bg-warning text-dark text-center rounded-3">
+      <h3>Settings</h3>
+      <p>Manage users, security, and preferences.</p>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}

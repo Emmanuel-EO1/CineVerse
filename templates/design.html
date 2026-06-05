@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title if title else "CineVerse" }}</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="app-root">
+
+  <!-- NAVBAR - Using our manual system -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-navbar">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold logo-text" href="{{ url_for('home') }}">🎬 CineVerse</a>
+
+      <!-- Manual Hamburger -->
+      <button class="navbar-toggler" type="button" id="manualHamburger">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
+
+
+
+        <ul class="navbar-nav align-items-center">
+          {% if current_user.is_authenticated %}
+          <!-- Search Bar -->
+          <form action="{{ url_for('search') }}" method="get" class="d-flex me-3">
+            <div class="input-group">
+              <input type="text" name="q" class="form-control nav-search-input" placeholder="Search movies..."
+                aria-label="Search movies">
+              <button class="btn btn-outline-light nav-search-btn" type="submit">
+                <span>🔍</span>
+              </button>
+            </div>
+          </form>
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{{ url_for('favorites') }}"><!--❤️--> Favorites</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{{ url_for('profile') }}">👤 Profile</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{{ url_for('logout') }}">Logout</a>
+          </li>
+          {% else %}
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="{{ url_for('login') }}">Login</a></li>
+          <li class="nav-item"><a class="nav-link btn-signup-custom" href="{{ url_for('signup') }}">Sign Up</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid p-0">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer glass-footer text-center py-4">
+    <div class="container">
+      <p class="mb-1">&copy; {{ current_year }} 🎬 <strong>CineVerse</strong>. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Settings FAB -->
+  <button class="settings-fab floating-btn" id="settingsFab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+      <path
+        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  </button>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content glass-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Appearance Settings</h5>
+        <button type="button" class="btn-close btn-close-custom" id="closeModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="theme-options d-flex justify-content-between mb-4">
+          <div class="theme-card" data-theme="light">
+            <div class="theme-card-icon">☀️</div>
+            <div class="theme-card-title">Light</div>
+          </div>
+          <div class="theme-card" data-theme="dark">
+            <div class="theme-card-icon">🌙</div>
+            <div class="theme-card-title">Dark</div>
+          </div>
+          <div class="theme-card" data-theme="system">
+            <div class="theme-card-icon">💻</div>
+            <div class="theme-card-title">System</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-glow w-100" id="saveTheme">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. For the Hamburger
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 Initializing CineVerse...');
+
+      const hamburger = document.getElementById('manualHamburger');
+      const navbarMenu = document.getElementById('navbarMenu');
+
+      console.log('Hamburger:', hamburger);
+      console.log('Navbar Menu:', navbarMenu);
+
+      if (hamburger && navbarMenu) {
+        hamburger.addEventListener('click', function () {
+          console.log('🍔 Hamburger clicked!');
+          navbarMenu.classList.toggle('show');
+        });
+      } else {
+        console.log('❌ Hamburger or navbar menu not found!');
+      }
+
+      // 2. Settings Modal
+      const settingsFab = document.getElementById('settingsFab');
+      const settingsModal = document.getElementById('settingsModal');
+      const closeModal = document.getElementById('closeModal');
+
+      if (settingsFab && settingsModal) {
+        settingsFab.addEventListener('click', function () {
+          console.log('⚙️ Settings clicked!');
+          settingsModal.classList.add('active');
+        });
+
+        closeModal.addEventListener('click', function () {
+          console.log('❌ Close clicked!');
+          settingsModal.classList.remove('active');
+        });
+
+        settingsModal.addEventListener('click', function (e) {
+          if (e.target === settingsModal) {
+            settingsModal.classList.remove('active');
+          }
+        });
+      }
+
+      // 3. Theme System
+      const themeCards = document.querySelectorAll('.theme-card');
+      const saveThemeBtn = document.getElementById('saveTheme');
+
+      function applyTheme(theme) {
+        console.log('🎨 Applying theme:', theme);
+        document.documentElement.className = theme + '-theme';
+        localStorage.setItem('mv-theme', theme);
+
+        themeCards.forEach(card => {
+          card.classList.remove('active');
+          if (card.dataset.theme === theme) {
+            card.classList.add('active');
+          }
+        });
+      }
+
+      themeCards.forEach(card => {
+        card.addEventListener('click', function () {
+          const theme = this.dataset.theme;
+          themeCards.forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+
+      if (saveThemeBtn) {
+        saveThemeBtn.addEventListener('click', function () {
+          const activeCard = document.querySelector('.theme-card.active');
+          if (activeCard) {
+            const theme = activeCard.dataset.theme;
+            applyTheme(theme);
+            settingsModal.classList.remove('active');
+          }
+        });
+      }
+
+      // Initialize with current theme
+      const savedTheme = localStorage.getItem('mv-theme') || 'dark';
+      applyTheme(savedTheme);
+
+      console.log('✅ CineVerse initialized successfully!');
+    });
+  </script>
+
+  <script>
+    // Favorite functionality
+    async function toggleFavorite(event, movieId) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const favoriteBtn = event.target;
+
+      try {
+        if (favoriteBtn.classList.contains('favorite-active')) {
+          // Remove from favorites
+          const response = await fetch(`/remove_favorite/${movieId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            favoriteBtn.classList.remove('favorite-active');
+            favoriteBtn.innerHTML = '🤍';
+            showNotification('Removed from favorites', 'success');
+
+            // If on favorites page, remove the card
+            if (window.location.pathname === '/favorites') {
+              favoriteBtn.closest('.movie-card-wrapper').remove();
+
+              // Check if no favorites left
+              const remainingFavorites = document.querySelectorAll('.movie-card-wrapper').length;
+              if (remainingFavorites === 0) {
+                location.reload(); // Reload to show empty state
+              }
+            }
+          }
+        } else {
+          // Add to favorites
+          const response = await fetch(`/add_favorite/${movieId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            favoriteBtn.classList.add('favorite-active');
+            favoriteBtn.innerHTML = '❤️';
+            showNotification('Added to favorites!', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showNotification('Error updating favorites', 'error');
+      }
+    }
+
+    function showNotification(message, type) {
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+      notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+    `;
+      notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+      document.body.appendChild(notification);
+
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 3000);
+    }
+
+    // Initialize favorite buttons on page load
+    document.addEventListener('DOMContentLoaded', function () {
+      // Check favorite status for all movie cards
+      const favoriteBtns = document.querySelectorAll('.favorite-btn');
+      favoriteBtns.forEach(btn => {
+        const movieId = btn.dataset.movieId;
+        checkFavoriteStatus(movieId, btn);
+      });
+    });
+
+    async function checkFavoriteStatus(movieId, btn) {
+      try {
+        const response = await fetch(`/is_favorite/${movieId}`);
+        const result = await response.json();
+
+        if (result.is_favorite) {
+          btn.classList.add('favorite-active');
+          btn.innerHTML = '❤️';
+        } else {
+          btn.classList.remove('favorite-active');
+          btn.innerHTML = '🤍';
+        }
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,111 @@
+{% extends "design.html" %}
+{% block content %}
+<!-- Hero Section with Parallax -->
+<section class="hero-section">
+  <div class="hero-bg" style="background-image: url('{{ image_base }}{{ trending_movies[0].backdrop_path if trending_movies and trending_movies[0].backdrop_path else '' }}');"></div>
+  <div class="hero-overlay">
+    <div class="container">
+      <div class="hero-content animate-fade-in">
+        <h1 class="hero-title">Welcome to <span class="gradient-text">CineVerse</span></h1>
+        <p class="hero-subtitle">Discover endless entertainment. Stream the latest movies and TV shows in stunning quality.</p>
+        <div class="hero-buttons">
+          {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('signup') }}" class="btn btn-primary btn-hero">Start Streaming Free</a>
+            <!-- <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-hero">Sign In</a> -->
+          {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-hero">Go to Dashboard</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+  <div class="container">
+    <div class="row text-center">
+      <div class="col-md-4 feature-item animate-slide-up">
+        <div class="feature-icon">🎬</div>
+        <h4>4K Streaming</h4>
+        <p>Experience movies in stunning 4K resolution with immersive audio.</p>
+      </div>
+      <div class="col-md-4 feature-item animate-slide-up" style="animation-delay: 0.2s;">
+        <div class="feature-icon">📱</div>
+        <h4>Watch Anywhere</h4>
+        <p>Stream on your phone, tablet, laptop, and TV.</p>
+      </div>
+      <div class="col-md-4 feature-item animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="feature-icon">🎯</div>
+        <h4>Personalized</h4>
+        <p>Get recommendations based on your watching habits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trending Movies Section -->
+<section class="movies-section py-5 bg-dark">
+  <div class="container">
+    <h2 class="section-title text-center mb-5">Trending Now</h2>
+    <div class="row g-4">
+      {% for movie in trending_movies[:6] %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('login') }}" class="movie-card-link">
+          <div class="movie-card animate-scale">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}" class="poster-img">
+              <div class="movie-overlay">
+                <div class="movie-info">
+                  <h6>{{ movie.title }}</h6>
+                  <span class="rating">⭐ {{ "%.1f"|format(movie.vote_average) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Popular Movies Section -->
+<section class="movies-section py-5">
+  <div class="container">
+    <h2 class="section-title text-center mb-5">Popular This Week</h2>
+    <div class="row g-4">
+      {% for movie in popular_movies[:6] %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <a href="{{ url_for('signup') }}" class="movie-card-link">
+          <div class="movie-card animate-scale">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}" class="poster-img">
+              <div class="movie-overlay">
+                <div class="movie-info">
+                  <h6>{{ movie.title }}</h6>
+                  <span class="rating">⭐ {{ "%.1f"|format(movie.vote_average) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section py-5 bg-primary text-white">
+  <div class="container text-center">
+    <h2 class="mb-3">Ready to Start Streaming?</h2>
+    <p class="mb-4">Join thousands of movie lovers enjoying unlimited entertainment.</p>
+    {% if not current_user.is_authenticated %}
+      <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg">Create Free Account</a>
+    {% else %}
+      <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">Continue Watching</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "design.html" %}
+{% block content %}
+<!-- Favorites Hero -->
+<section class="favorites-hero py-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="display-4 fw-bold mb-4" style="padding-top: 76px;">❤️ My Favorites</h1>
+        <p class="lead">Your personal collection of favorite movies</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Favorites Grid -->
+<section class="favorites-content py-5">
+  <div class="container">
+    {% if favorites %}
+    <div class="movie-grid">
+      {% for favorite in favorites %}
+      <div class="movie-card-wrapper">
+        <a href="{{ url_for('movie_details', movie_id=favorite.movie_id) }}" class="movie-card-link">
+          <div class="movie-card">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ favorite.movie_poster }}" alt="{{ favorite.movie_title }}">
+              <div class="movie-overlay">
+                <button class="btn-play-sm">▶</button>
+              </div>
+              <!-- Favorite Heart Button -->
+              <button class="favorite-btn favorite-active" 
+                      data-movie-id="{{ favorite.movie_id }}"
+                      onclick="toggleFavorite(event, '{{ favorite.movie_id }}')">
+                ❤️
+              </button>
+            </div>
+            <div class="movie-info">
+              <h6 class="movie-title">{{ favorite.movie_title }}</h6>
+              <div class="movie-meta-sm">
+                <span class="date-added">Added {{ favorite.added_date.strftime('%b %d, %Y') }}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+      <div class="empty-favorites-icon mb-4">🎬</div>
+      <h3>No favorites yet</h3>
+      <p class="text-muted mb-4">Start adding movies to your favorites by clicking the heart icon!</p>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Browse Movies</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

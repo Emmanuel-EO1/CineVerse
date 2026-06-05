@@ -1,0 +1,281 @@
+{% extends "design.html" %}
+{% block content %}
+<!-- Movie Hero Section -->
+<section class="movie-hero-section">
+  <div class="movie-hero-bg" style="background-image: url('{{ image_base }}{{ movie.backdrop_path }}');"></div>
+  <div class="movie-hero-overlay">
+    <div class="container">
+      <div class="row align-items-end">
+        <div class="col-md-4">
+          <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}" class="movie-detail-poster img-fluid rounded">
+        </div>
+        <div class="col-md-8 text-white">
+          <h1 class="display-4 fw-bold mb-3">{{ movie.title }}</h1>
+          <div class="movie-meta-large mb-3">
+            <span class="rating">⭐ {{ "%.1f"|format(movie.vote_average) }}</span>
+            <span class="year">{{ movie.release_date[:4] if movie.release_date else 'TBA' }}</span>
+            <span class="duration">{{ movie.runtime }} min</span>
+            <span class="genre">
+              {% for genre in movie.genres[:3] %}
+                {{ genre.name }}{% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </span>
+          </div>
+          <p class="lead mb-4">{{ movie.overview }}</p>
+          
+          {% if trailer %}
+          <button class="btn btn-danger btn-lg me-3" onclick="playTrailer('{{ trailer.key }}')">
+            <span>▶ Watch Trailer</span>
+          </button>
+          {% endif %}
+          
+          <button class="btn btn-outline-light btn-lg">
+            <span>❤️ Add to Watchlist</span>
+          </button>
+          <!-- {% if current_user.is_authenticated %}
+          <button class="favorite-btn" 
+            data-movie-id="{{ movie.id }}"
+            onclick="toggleFavorite(event, '{{ movie.id }}')">🤍</button>
+        {% endif %} -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Movie Details -->
+<section class="movie-details py-5">
+  <div class="container">
+    <div class="row">
+      <!-- Main Content -->
+      <div class="col-lg-8">
+        <!-- Trailer Section -->
+        {% if trailer %}
+        <div class="trailer-section mb-5">
+          <h3 class="mb-4">Trailer</h3>
+          <div class="trailer-container">
+            <div id="trailerPlayer" style="display: none;">
+              <iframe id="youtubePlayer" width="100%" height="400" 
+                      src="" frameborder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+              </iframe>
+            </div>
+            <div id="trailerPlaceholder" class="trailer-placeholder">
+              <img src="{{ image_base }}{{ movie.backdrop_path }}" alt="{{ movie.title }}" class="img-fluid rounded">
+              <div class="trailer-overlay">
+                <button class="btn btn-danger btn-play-trailer" onclick="playTrailer('{{ trailer.key }}')">
+                  <span>▶ Play Trailer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Movie Info -->
+        <div class="movie-info-section mb-5">
+          <h3 class="mb-4">About the Movie</h3>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Release Date:</strong> {{ movie.release_date if movie.release_date else 'TBA' }}</p>
+              <p><strong>Runtime:</strong> {{ movie.runtime }} minutes</p>
+              <p><strong>Budget:</strong> ${{ "{:,}".format(movie.budget) if movie.budget else 'N/A' }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Revenue:</strong> ${{ "{:,}".format(movie.revenue) if movie.revenue else 'N/A' }}</p>
+              <p><strong>Status:</strong> {{ movie.status }}</p>
+              <p><strong>Rating:</strong> {{ "%.1f"|format(movie.vote_average) }}/10 ({{ movie.vote_count }} votes)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Similar Movies -->
+        {% if similar_movies %}
+        <div class="similar-movies">
+          <h4 class="mb-4">Similar Movies</h4>
+          <div class="similar-movies-grid">
+            {% for similar_movie in similar_movies %}
+            <a href="{{ url_for('movie_details', movie_id=similar_movie.id) }}" class="similar-movie-card">
+              <img src="{{ image_base }}{{ similar_movie.poster_path }}" alt="{{ similar_movie.title }}" class="similar-poster">
+              <div class="similar-movie-info">
+                <h6>{{ similar_movie.title }}</h6>
+                <span class="rating-sm">⭐ {{ "%.1f"|format(similar_movie.vote_average) }}</span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trailer Modal -->
+<div class="modal-overlay" id="trailerModal">
+  <div class="modal-content trailer-modal">
+    <div class="modal-header">
+      <h5 class="modal-title">{{ movie.title }} - Trailer</h5>
+      <button type="button" class="btn-close btn-close-custom" onclick="closeTrailer()">×</button>
+    </div>
+    <div class="modal-body">
+      <iframe id="trailerIframe" width="100%" height="400" 
+              src="" frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Movie Details Styles */
+.movie-hero-section {
+  height: 80vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.movie-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.4);
+}
+
+.movie-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: linear-gradient(transparent 0%, rgba(0,0,0,0.9) 100%);
+  padding-bottom: 4rem;
+}
+
+.movie-detail-poster {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  border: 3px solid rgba(255,255,255,0.1);
+}
+
+.movie-meta-large {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.trailer-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.trailer-placeholder {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.trailer-placeholder:hover {
+  transform: scale(1.02);
+}
+
+.trailer-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-play-trailer {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.similar-movies-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.similar-movie-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--glass);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.3s ease;
+}
+
+.similar-movie-card:hover {
+  transform: translateX(5px);
+  color: var(--text);
+}
+
+.similar-poster {
+  width: 60px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.trailer-modal {
+  max-width: 800px;
+  width: 90%;
+}
+
+/* Light theme adjustments */
+.light-theme .similar-movie-card {
+  background: rgba(0,0,0,0.05);
+}
+
+.light-theme .movie-detail-poster {
+  border: 3px solid rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+function playTrailer(trailerKey) {
+  const trailerModal = document.getElementById('trailerModal');
+  const trailerIframe = document.getElementById('trailerIframe');
+  
+  trailerIframe.src = `https://www.youtube.com/embed/${trailerKey}?autoplay=1`;
+  trailerModal.classList.add('active');
+}
+
+function closeTrailer() {
+  const trailerModal = document.getElementById('trailerModal');
+  const trailerIframe = document.getElementById('trailerIframe');
+  
+  trailerIframe.src = '';
+  trailerModal.classList.remove('active');
+}
+
+// Close trailer when clicking outside
+document.getElementById('trailerModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeTrailer();
+  }
+});
+</script>
+{% endblock %}

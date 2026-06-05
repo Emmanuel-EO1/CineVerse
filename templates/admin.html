@@ -1,0 +1,197 @@
+{% extends "design.html" %}
+{% block content %}
+<!-- Dashboard Hero - Same as before -->
+<section class="dashboard-hero">
+  <div class="dashboard-bg" style="background-image: url('{{ image_base }}{{ trending_movies[0].backdrop_path if trending_movies and trending_movies[0].backdrop_path else '' }}');"></div>
+  <div class="dashboard-overlay">
+    <div class="container">
+      <div class="hero-movie-info">
+        <h1 class="display-4 fw-bold">{{ trending_movies[0].title if trending_movies else 'Welcome' }}</h1>
+        <p class="lead">{{ trending_movies[0].overview if trending_movies else 'Start exploring amazing movies' }}</p>
+        <div class="movie-meta">
+          <span class="rating">⭐ {{ "%.1f"|format(trending_movies[0].vote_average) if trending_movies else '8.5' }}</span>
+          <span class="year">{{ trending_movies[0].release_date[:4] if trending_movies and trending_movies[0].release_date else '2024' }}</span>
+          <span class="duration">2h 28m</span>
+        </div>
+        {% if trending_movies %}
+      <a href="{{ url_for('movie_details', movie_id=trending_movies[0].id) }}" class="btn btn-danger btn-play">
+        <span>▶ Play Now</span>
+      </a>
+      {% else %}
+        <a href="{{ url_for('home') }}" class="btn btn-danger btn-play">
+          <span>▶ Play Now</span>
+        </a>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Dashboard Content - RESTORED ORIGINAL UI -->
+<section class="dashboard-content py-5">
+  <div class="container">
+    
+    <!-- Continue Watching - Horizontal Scroll -->
+    <div class="section-row mb-5">
+      <h3 class="section-title mb-4">Continue Watching</h3>
+      <div class="movie-scroll">
+        {% for movie in trending_movies[:6] %}
+        <div class="scroll-item">
+          <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="movie-card-link">
+            <div class="movie-card">
+              <div class="poster-wrapper">
+                <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: {{ (loop.index * 15) % 100 }}%;"></div>
+                </div>
+              </div>
+              <div class="movie-info">
+                <h6 class="movie-title">{{ movie.title }}</h6>
+                <p class="movie-description">{{ movie.overview[:60] }}{% if movie.overview and movie.overview|length > 60 %}...{% endif %}</p>
+                <span class="duration">2h {{ 28 - loop.index }}m</span>
+              </div>
+            </div>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Trending Now - Grid Layout -->
+    <div class="section-row mb-5">
+      <h3 class="section-title mb-4">Trending Now</h3>
+      <div class="movie-grid">
+        {% for movie in trending_movies[6:18] %}
+        <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="movie-card-link">
+          <div class="movie-card">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}">
+              {% if current_user.is_authenticated %}
+                <button class="favorite-btn" 
+                data-movie-id="{{ movie.id }}"
+                onclick="toggleFavorite(event, '{{ movie.id }}')">🤍</button>
+              {% endif %}
+              <div class="movie-overlay">
+                <button class="btn-play-sm">▶</button>
+              </div>
+            </div>
+            <div class="movie-info">
+              <h6 class="movie-title">{{ movie.title }}</h6>
+              <p class="movie-description">{{ movie.overview[:80] }}{% if movie.overview and movie.overview|length > 80 %}...{% endif %}</p>
+              <div class="movie-meta-sm">
+                <span class="year">{{ movie.release_date[:4] if movie.release_date else '2024' }}</span>
+                <span class="duration">2h {{ 30 - loop.index }}m</span>
+              </div>
+              <div class="rating-sm">⭐ {{ "%.1f"|format(movie.vote_average) }}</div>
+            </div>
+          </div>
+        </a>  
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- New Releases - Grid Layout -->
+    <div class="section-row mb-5">
+      <h3 class="section-title mb-4">New Releases</h3>
+      <div class="movie-grid">
+        {% for movie in popular_movies[:12] %}
+        <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="movie-card-link">
+          <div class="movie-card">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}">
+              {% if current_user.is_authenticated %}
+                <button class="favorite-btn" 
+                data-movie-id="{{ movie.id }}"
+                onclick="toggleFavorite(event, '{{ movie.id }}')">🤍</button>
+              {% endif %}
+              <div class="movie-overlay">
+                <button class="btn-play-sm">▶</button>
+              </div>
+            </div>
+            <div class="movie-info">
+              <h6 class="movie-title">{{ movie.title }}</h6>
+              <p class="movie-description">{{ movie.overview[:80] }}{% if movie.overview and movie.overview|length > 80 %}...{% endif %}</p>
+              <div class="movie-meta-sm">
+                <span class="year">{{ movie.release_date[:4] if movie.release_date else '2024' }}</span>
+                <span class="duration">2h {{ 25 - loop.index }}m</span>
+              </div>
+              <div class="rating-sm">⭐ {{ "%.1f"|format(movie.vote_average) }}</div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recommended For You - Grid Layout -->
+    <div class="section-row">
+      <h3 class="section-title mb-4">Recommended For You</h3>
+      <div class="movie-grid">
+        {% for movie in upcoming_movies[:12] if upcoming_movies %}
+        <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="movie-card-link">
+          <div class="movie-card">
+            <div class="poster-wrapper">
+              <img src="{{ image_base }}{{ movie.poster_path }}" alt="{{ movie.title }}">
+              {% if current_user.is_authenticated %}
+                <button class="favorite-btn" 
+                data-movie-id="{{ movie.id }}"
+                onclick="toggleFavorite(event, '{{ movie.id }}')">🤍</button>
+              {% endif %}
+              <div class="movie-overlay">
+                <button class="btn-play-sm">▶</button>
+              </div>
+            </div>
+            <div class="movie-info">
+              <h6 class="movie-title">{{ movie.title }}</h6>
+              <p class="movie-description">{{ movie.overview[:80] }}{% if movie.overview and movie.overview|length > 80 %}...{% endif %}</p>
+              <div class="movie-meta-sm">
+                <span class="year">{{ movie.release_date[:4] if movie.release_date else '2024' }}</span>
+                <span class="duration">2h {{ 20 - loop.index }}m</span>
+              </div>
+              <div class="rating-sm">⭐ {{ "%.1f"|format(movie.vote_average) }}</div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Settings FAB
+<button class="settings-fab floating-btn" id="settingsFab">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+  </svg>
+</button> -->
+
+<!-- Settings Modal 
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content glass-modal">
+    <div class="modal-header">
+      <h5 class="modal-title">Appearance Settings</h5>
+      <button type="button" class="btn-close btn-close-custom" id="closeModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="theme-options d-flex justify-content-between mb-4">
+        <div class="theme-card" data-theme="light">
+          <div class="theme-card-icon">☀️</div>
+          <div class="theme-card-title">Light</div>
+        </div>
+        <div class="theme-card" data-theme="dark">
+          <div class="theme-card-icon">🌙</div>
+          <div class="theme-card-title">Dark</div>
+        </div>
+        <div class="theme-card" data-theme="system">
+          <div class="theme-card-icon">💻</div>
+          <div class="theme-card-title">System</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-glow w-100" id="saveTheme">Save Changes</button>
+    </div>
+  </div>
+</div> 
+-->
+{% endblock %}

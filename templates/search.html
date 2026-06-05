@@ -1,0 +1,401 @@
+{% extends "design.html" %}
+{% block content %}
+<!-- Search Hero Section -->
+<section class="search-hero py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-10 text-center">
+        <h1 class="display-5 fw-bold mb-4">Movie Search</h1>
+        
+        <!-- Enhanced Search Form with Filters -->
+        <form action="{{ url_for('search') }}" method="get" class="search-form mb-5">
+          <!-- Search Box -->
+          <div class="input-group input-group-lg mb-4">
+            <input type="text" 
+                   name="q" 
+                   value="{{ query }}"
+                   class="form-control search-input" 
+                   placeholder="Search for movies..." 
+                   aria-label="Search movies">
+            <button class="btn btn-danger search-btn" type="submit">
+              <span>🔍 Search</span>
+            </button>
+          </div>
+          
+          <!-- Advanced Filters -->
+          <div class="advanced-filters">
+            <div class="row g-3 justify-content-center">
+              <!-- Genre Filter -->
+              <div class="col-md-3">
+                <select name="genre" class="form-select filter-select">
+                  <option value="">All Genres</option>
+                  {% for g in genres %}
+                  <option value="{{ g.id }}" {% if genre == g.id|string %}selected{% endif %}>
+                    {{ g.name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <!-- Rating Filter -->
+              <div class="col-md-3">
+                <select name="min_rating" class="form-select filter-select">
+                  <option value="">Any Rating</option>
+                  <option value="4" {% if min_rating == '4' %}selected{% endif %}>⭐ 4.0+</option>
+                  <option value="5" {% if min_rating == '5' %}selected{% endif %}>⭐ 5.0+</option>
+                  <option value="6" {% if min_rating == '6' %}selected{% endif %}>⭐ 6.0+</option>
+                  <option value="7" {% if min_rating == '7' %}selected{% endif %}>⭐ 7.0+</option>
+                  <option value="8" {% if min_rating == '8' %}selected{% endif %}>⭐ 8.0+</option>
+                  <option value="9" {% if min_rating == '9' %}selected{% endif %}>⭐ 9.0+</option>
+                </select>
+              </div>
+              
+              <!-- Year Filter -->
+              <div class="col-md-3">
+                <input type="number" 
+                       name="year" 
+                       value="{{ year }}"
+                       class="form-control filter-select" 
+                       placeholder="Release Year" 
+                       min="1900" 
+                       max="2030">
+              </div>
+              
+              <!-- Clear Filters -->
+              <div class="col-md-2">
+                <a href="{{ url_for('search') }}" class="btn btn-outline-secondary w-100">
+                  🗑️ Clear
+                </a>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Results Info -->
+        {% if query or genre or min_rating or year %}
+        <div class="results-info mb-4">
+          <p class="lead">
+            {% if total_results > 0 %}
+              Found <strong>{{ total_results }}</strong> results
+              {% if query %} for "<strong>{{ query }}</strong>"{% endif %}
+              {% if genre %} in <strong>{{ genres|selectattr('id', 'equalto', genre|int)|map(attribute='name')|first }}</strong>{% endif %}
+              {% if min_rating %} with rating <strong>⭐ {{ min_rating }}+</strong>{% endif %}
+              {% if year %} from <strong>{{ year }}</strong>{% endif %}
+            {% else %}
+              No results found
+              {% if query %} for "<strong>{{ query }}</strong>"{% endif %}
+              {% if genre %} in <strong>{{ genres|selectattr('id', 'equalto', genre|int)|map(attribute='name')|first }}</strong>{% endif %}
+              {% if min_rating %} with rating <strong>⭐ {{ min_rating }}+</strong>{% endif %}
+              {% if year %} from <strong>{{ year }}</strong>{% endif %}
+            {% endif %}
+          </p>
+          
+          <!-- Active Filters -->
+          {% if genre or min_rating or year %}
+          <div class="active-filters">
+            <small class="text-muted">Active filters:</small>
+            {% if genre %}
+            <span class="filter-badge">
+              Genre: {{ genres|selectattr('id', 'equalto', genre|int)|map(attribute='name')|first }}
+              <a href="{{ url_for('search', q=query, min_rating=min_rating, year=year) }}" class="filter-remove">×</a>
+            </span>
+            {% endif %}
+            {% if min_rating %}
+            <span class="filter-badge">
+              Rating: ⭐ {{ min_rating }}+
+              <a href="{{ url_for('search', q=query, genre=genre, year=year) }}" class="filter-remove">×</a>
+            </span>
+            {% endif %}
+            {% if year %}
+            <span class="filter-badge">
+              Year: {{ year }}
+              <a href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating) }}" class="filter-remove">×</a>
+            </span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Search Results -->
+{% if query or genre or min_rating or year %}
+<section class="search-results py-5">
+  <div class="container">
+    {% if movies %}
+    <div class="movie-grid">
+      {% for movie in movies %}
+      <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="movie-card-link">
+        <div class="movie-card">
+          <div class="poster-wrapper">
+            <img src="{{ image_base }}{{ movie.poster_path if movie.poster_path else '' }}" 
+                 alt="{{ movie.title }}"
+                 onerror="this.src='https://via.placeholder.com/300x450/333/fff?text=No+Image'">
+            <div class="movie-overlay">
+              <button class="btn-play-sm">▶</button>
+            </div>
+            {% if current_user.is_authenticated %}
+            <button class="favorite-btn" 
+                    data-movie-id="{{ movie.id }}"
+                    onclick="toggleFavorite(event, '{{ movie.id }}')">
+              🤍
+            </button>
+            {% endif %}
+          </div>
+          <div class="movie-info">
+            <h6 class="movie-title">{{ movie.title }}</h6>
+            <p class="movie-description">
+              {{ movie.overview[:80] }}{% if movie.overview and movie.overview|length > 80 %}...{% endif %}
+            </p>
+            <div class="movie-meta-sm">
+              <span class="year">{{ movie.release_date[:4] if movie.release_date else 'TBA' }}</span>
+              <span class="rating-sm">⭐ {{ "%.1f"|format(movie.vote_average) if movie.vote_average else 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav aria-label="Search results pagination" class="mt-5">
+      <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating, year=year, page=page-1) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% set start_page = [1, page-2]|max %}
+        {% set end_page = [total_pages, page+2]|min %}
+        
+        {% if start_page > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating, year=year, page=1) }}">1</a>
+        </li>
+        {% if start_page > 2 %}
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        {% endif %}
+        
+        {% for p in range(start_page, end_page + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating, year=year, page=p) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        
+        {% if end_page < total_pages %}
+        {% if end_page < total_pages - 1 %}
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating, year=year, page=total_pages) }}">{{ total_pages }}</a>
+        </li>
+        {% endif %}
+        
+        {% if page < total_pages %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('search', q=query, genre=genre, min_rating=min_rating, year=year, page=page+1) }}">Next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-5">
+      <div class="no-results-icon mb-4">🎬</div>
+      <h3>No movies found</h3>
+      <p class="text-muted">Try adjusting your search criteria or filters</p>
+      <a href="{{ url_for('search') }}" class="btn btn-primary">Clear Search</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<style>
+/* Enhanced Search & Filter Styles */
+.advanced-filters {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-top: 1rem;
+}
+
+.filter-select {
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 0.75rem;
+    width: 100%;
+    backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+    appearance: none;
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+}
+
+.filter-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+    outline: none;
+    background-color: rgba(255,255,255,0.15);
+}
+
+/* Dark theme dropdown styling */
+.dark-theme .filter-select {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #ffffff;
+}
+
+.dark-theme .filter-select option {
+    background: #2d2d2d;
+    color: #ffffff;
+    padding: 10px;
+}
+
+.dark-theme .filter-select:focus {
+    background-color: rgba(45, 45, 45, 0.9);
+}
+
+/* Light theme dropdown styling */
+.light-theme .filter-select {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,0,0,0.2);
+    color: #333333;
+}
+
+.light-theme .filter-select option {
+    background: #ffffff;
+    color: #333333;
+    padding: 10px;
+}
+
+.light-theme .filter-select:focus {
+    background-color: rgba(255,255,255,0.95);
+}
+
+.active-filters {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--primary);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.filter-remove {
+    color: white;
+    text-decoration: none;
+    margin-left: 0.5rem;
+    font-weight: bold;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.filter-remove:hover {
+    color: white;
+    opacity: 0.8;
+}
+
+/* Light theme adjustments */
+.light-theme .advanced-filters {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.light-theme .filter-badge {
+    background: #e50914;
+    color: white;
+}
+
+/* Ensures the search input also matches */
+.search-input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text);
+    border-radius: 8px 0 0 8px;
+}
+
+.search-input:focus {
+    background: rgba(255,255,255,0.15);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+    color: var(--text);
+}
+
+.light-theme .search-input {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #333;
+}
+
+.light-theme .search-input:focus {
+    background: rgba(0,0,0,0.08);
+    color: #333;
+}
+
+/* Fix for number input in year filter */
+input[type="number"].filter-select {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text);
+}
+
+.dark-theme input[type="number"].filter-select {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #ffffff;
+}
+
+.light-theme input[type="number"].filter-select {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,0,0,0.2);
+    color: #333333;
+}
+
+/* Remove background image for number inputs */
+input[type="number"].filter-select {
+    background-image: none !important;
+    padding-right: 0.5rem !important;
+}
+</style>
+
+<script>
+// Auto-submit form when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('.filter-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to CineVerse</title>
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container{
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header{
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content{
+            padding: 30px;
+            line-height: 1.6;
+        }
+        .footer{
+            background-color: #eeeeee;
+            color: #777;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        .username-highlight{
+            font-weight: bold;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Welcome to CineVerse!</h2>
+        </div>
+        <div class="content">
+            <p>Hello <span class="username-highlight">{{ username }}</span></p>
+            <p>We are thrilled to welcome you to CineVerse, your dedicated platform for discovering the best in trending cinema.</p>
+            <p>Your account has been successfully created. You can now log in and start exploring all our features.</p>
+            <p>Click the link below to start your movie journey:</p>
+            <p style="text-align: center;">
+                <a href="{{ login_url }}" style="background-color: hsl(240, 38%, 44%); color:white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Log In Now</a>
+            </p>
+            <p>Happy Watching!</p>
+        </div>
+        <div class="footer">
+            &copy; {{ current_year }} CineVerse. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

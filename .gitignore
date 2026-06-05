@@ -1,0 +1,5 @@
+pesovenv/
+*.pyc
+__pycache__/
+.env
+instance/
