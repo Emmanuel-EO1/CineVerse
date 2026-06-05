@@ -41,18 +41,15 @@ mail = Mail(app)
 ENV = os.getenv('ENV', 'local')
 
 if ENV == 'production':
-    # Inject pure Python MySQL driver to prevent system check property crashes on Render
     pymysql.install_as_MySQLdb()
     
     prod_db_url = os.getenv('DATABASE_URL')
     
-    # Adapt standard database URL syntax for SQLAlchemy compatibility
     if prod_db_url and prod_db_url.startswith('mysql://'):
         prod_db_url = prod_db_url.replace('mysql://', 'mysql+pymysql://')
         
     app.config['SQLALCHEMY_DATABASE_URI'] = prod_db_url
     
-    # Apply global SSL context handling for cloud endpoints (like TiDB Cloud)
     import certifi
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "connect_args": {
@@ -67,7 +64,6 @@ else:
     db_host = os.getenv('LOCAL_DB_HOST', 'localhost')
     db_name = os.getenv('LOCAL_DB_NAME', 'movieapp')
     
-    # Uses the standard connector dialect locally exactly as your system expects
     app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -85,11 +81,10 @@ class Users(UserMixin, db.Model):
     password = db.Column(db.String(250), nullable=False)
     theme = db.Column(db.String(250), nullable=False, default='system')
     
-    # NEW PROFILE FIELDS
     email = db.Column(db.String(150), unique=True, nullable=True)
     full_name = db.Column(db.String(150), nullable=True)
     bio = db.Column(db.Text, nullable=True)
-    avatar = db.Column(db.String(500), nullable=True)  # URL to avatar image
+    avatar = db.Column(db.String(500), nullable=True)
     join_date = db.Column(db.DateTime, default=datetime.now)
     last_login = db.Column(db.DateTime, nullable=True)
 
@@ -116,14 +111,13 @@ def get_popular_movies(endpoint):
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            return data['results'][:20]  # Limit to 20 movies
+            return data['results'][:20]
         else:
             return []
     except:
         return []
 
 def get_movie_details(movie_id):
-    """Get detailed movie information"""
     url = f"{TMDB_BASE_URL}/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
     try:
         response = requests.get(url)
@@ -134,7 +128,7 @@ def get_movie_details(movie_id):
         return None
     
 
-#--- Fuction to send email ---
+#--- Function to send email ---
 def send_async_email(app, msg):
     with app.app_context():
         try:
@@ -155,7 +149,6 @@ def send_registration_email(recipient_email, username):
         recipients=[recipient_email],
         html=html_body
     )
-    # Start a new thread for non-blocking email sending
     thr = Thread(target=send_async_email, args=[app, msg])
     thr.start()
     return thr
@@ -165,6 +158,14 @@ def send_registration_email(recipient_email, username):
 @app.context_processor
 def inject_year():
     return {'current_year': datetime.now().year}
+
+
+# ============================================================
+# CREATE TABLES ON STARTUP (works with both gunicorn and direct)
+# ============================================================
+with app.app_context():
+    db.create_all()
+    print("Database tables created/verified!")
 
 
 #4. Routes
@@ -184,10 +185,9 @@ def signup():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        email = request.form.get('email', '')  # New field
-        full_name = request.form.get('full_name', '')  # New field
+        email = request.form.get('email', '')
+        full_name = request.form.get('full_name', '')
 
-        #To check if User already exists
         existing_user = Users.query.filter((Users.username == username) | (Users.email == email)).first()
         if existing_user:
             flash('Username or email already exists!', 'error')
@@ -223,7 +223,6 @@ def login():
             flash('Invalid username or password', 'error')
             return redirect(url_for('login'))
         
-        # Update last login
         user.last_login = datetime.now()
         db.session.commit()
         
@@ -237,7 +236,6 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Get different categories of movies for dashboard
     trending_movies = get_popular_movies('trending/movie/week')
     popular_movies = get_popular_movies('movie/popular')
     upcoming_movies = get_popular_movies('movie/upcoming')
@@ -263,8 +261,6 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    """Display user profile"""
-    # Get user's favorites count
     favorites_count = Favorite.query.filter_by(user_id=current_user.id).count()
     
     return render_template('profile.html',
@@ -275,7 +271,6 @@ def profile():
 @app.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
-    """Update user profile information"""
     try:
         current_user.full_name = request.form.get('full_name', '')
         current_user.email = request.form.get('email', '')
@@ -293,7 +288,6 @@ def update_profile():
 @app.route('/update_avatar', methods=['POST'])
 @login_required
 def update_avatar():
-    """Update user avatar (simple URL-based for now)"""
     avatar_url = request.form.get('avatar_url', '')
     
     if avatar_url:
@@ -309,16 +303,12 @@ def update_avatar():
 #--- Movie Details Page ---
 @app.route('/movie/<int:movie_id>')
 def movie_details(movie_id):
-    """Get detailed information about a specific movie"""
-    # Get movie details
     movie_url = f"{TMDB_BASE_URL}/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
     movie_response = requests.get(movie_url)
     
-    # Get movie videos (trailers)
     videos_url = f"{TMDB_BASE_URL}/movie/{movie_id}/videos?api_key={TMDB_API_KEY}&language=en-US"
     videos_response = requests.get(videos_url)
     
-    # Get similar movies
     similar_url = f"{TMDB_BASE_URL}/movie/{movie_id}/similar?api_key={TMDB_API_KEY}&language=en-US&page=1"
     similar_response = requests.get(similar_url)
     
@@ -327,7 +317,6 @@ def movie_details(movie_id):
         videos = videos_response.json().get('results', []) if videos_response.status_code == 200 else []
         similar_movies = similar_response.json().get('results', [])[:8] if similar_response.status_code == 200 else []
         
-        # Find YouTube trailer
         trailer = None
         for video in videos:
             if video['type'] == 'Trailer' and video['site'] == 'YouTube':
@@ -348,14 +337,12 @@ def movie_details(movie_id):
 #--- Search Functionality ---
 @app.route('/search')
 def search():
-    """Handle movie search with advanced filters"""
     query = request.args.get('q', '')
     genre = request.args.get('genre', '')
     min_rating = request.args.get('min_rating', '')
     year = request.args.get('year', '')
     page = request.args.get('page', 1, type=int)
     
-    # Build TMDB API URL with filters
     base_url = f"{TMDB_BASE_URL}/discover/movie"
     params = {
         'api_key': TMDB_API_KEY,
@@ -365,11 +352,9 @@ def search():
     }
     
     if query:
-        # Use search endpoint for text queries
         base_url = f"{TMDB_BASE_URL}/search/movie"
         params['query'] = query
     else:
-        # Use discover endpoint for filtering
         if genre:
             params['with_genres'] = genre
         if min_rating:
@@ -377,18 +362,16 @@ def search():
         if year:
             params['primary_release_year'] = year
     
-    # Fetch genres for filter dropdown
     genres_url = f"{TMDB_BASE_URL}/genre/movie/list?api_key={TMDB_API_KEY}&language=en-US"
     genres_response = requests.get(genres_url)
     genres = genres_response.json().get('genres', []) if genres_response.status_code == 200 else []
     
-    # Fetch movies
     response = requests.get(base_url, params=params)
     
     if response.status_code == 200:
         data = response.json()
         movies = data['results']
-        total_pages = min(data['total_pages'], 10)  # Limit to 10 pages max
+        total_pages = min(data['total_pages'], 10)
         total_results = data['total_results']
     else:
         movies = []
@@ -413,15 +396,12 @@ def search():
 @app.route('/add_favorite/<int:movie_id>', methods=['POST'])
 @login_required
 def add_favorite(movie_id):
-    """Add a movie to user's favorites"""
-    # Get movie details from TMDB
     movie_url = f"{TMDB_BASE_URL}/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
     response = requests.get(movie_url)
     
     if response.status_code == 200:
         movie = response.json()
         
-        # Check if already in favorites
         existing_favorite = Favorite.query.filter_by(
             user_id=current_user.id, 
             movie_id=movie_id
@@ -430,7 +410,6 @@ def add_favorite(movie_id):
         if existing_favorite:
             return jsonify({'success': False, 'message': 'Already in favorites'})
         
-        # Add to favorites
         new_favorite = Favorite(
             user_id=current_user.id,
             movie_id=movie_id,
@@ -449,7 +428,6 @@ def add_favorite(movie_id):
 @app.route('/remove_favorite/<int:movie_id>', methods=['POST'])
 @login_required
 def remove_favorite(movie_id):
-    """Remove a movie from user's favorites"""
     favorite = Favorite.query.filter_by(
         user_id=current_user.id, 
         movie_id=movie_id
@@ -466,7 +444,6 @@ def remove_favorite(movie_id):
 @app.route('/is_favorite/<int:movie_id>')
 @login_required
 def is_favorite(movie_id):
-    """Check if movie is in user's favorites"""
     favorite = Favorite.query.filter_by(
         user_id=current_user.id, 
         movie_id=movie_id
@@ -478,7 +455,6 @@ def is_favorite(movie_id):
 @app.route('/favorites')
 @login_required
 def favorites():
-    """Display user's favorite movies"""
     user_favorites = Favorite.query.filter_by(user_id=current_user.id).all()
     return render_template('favorites.html', 
                          favorites=user_favorites,
@@ -488,10 +464,6 @@ def favorites():
 
 @app.route('/set_theme', methods=['POST'])
 def set_theme():
-    """
-    Accepts JSON: { "theme": "light" | "dark" | "system" }
-    If user logged in -> save to DB, else just return ok (frontend saves in localStorage).
-    """
     try:
         payload = request.get_json(force=True)
         theme = payload.get('theme', '').lower()
@@ -499,7 +471,6 @@ def set_theme():
             return jsonify({"error":"invalid theme"}), 400
 
         if current_user.is_authenticated:
-            # persist to DB
             current_user.theme = theme
             db.session.commit()
             return jsonify({"status":"ok", "saved_to_db": True})
@@ -508,15 +479,11 @@ def set_theme():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- CATCH-ALL ROUTE TO FIX ROUTING WARNINGS ---
+# --- CATCH-ALL ROUTE ---
 @app.route('/<path:invalid_path>')
 def catch_all(invalid_path):
-    """Redirect any unmatched paths to home page"""
     return redirect(url_for('home'))
 
 #5. Run App
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print("Database tables created/updated!")
     app.run(debug=True)
