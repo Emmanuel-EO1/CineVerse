@@ -28,7 +28,7 @@ TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 #--- FLASK-MAIL CONFIG ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = '587'
+app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
@@ -50,12 +50,14 @@ if ENV == 'production':
         
     app.config['SQLALCHEMY_DATABASE_URI'] = prod_db_url
     
+    # TiDB Serverless requires SSL but accepts the system/certifi CA bundle
     import certifi
+    import ssl
+    ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    ssl_ctx.verify_mode = ssl.CERT_REQUIRED
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "connect_args": {
-            "ssl": {
-                "ca": certifi.where()
-            }
+            "ssl": ssl_ctx
         }
     }
 else:
@@ -138,10 +140,11 @@ def send_async_email(app, msg):
             print(f'Failed to send async registration email: {e}')
 
 def send_registration_email(recipient_email, username):
+    # render_template must run in main app context, not inside the thread
     html_body = render_template(
         'email/welcome.html', 
         username=username,
-        login_url = url_for('login', _external=True),
+        login_url=url_for('login', _external=True),
         current_year=datetime.now().year
     )
     msg = Message(
@@ -150,6 +153,7 @@ def send_registration_email(recipient_email, username):
         html=html_body
     )
     thr = Thread(target=send_async_email, args=[app, msg])
+    thr.daemon = True
     thr.start()
     return thr
 
