@@ -19,6 +19,8 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'development_fallback_key')
 
+app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
+
 #--- TMDB API CONFIG ---
 TMDB_API_KEY = os.getenv('TMDB_API_KEY')
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
