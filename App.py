@@ -140,22 +140,26 @@ def send_async_email(app, msg):
             print(f'Failed to send async registration email: {e}')
 
 def send_registration_email(recipient_email, username):
-    # render_template must run in main app context, not inside the thread
-    html_body = render_template(
-        'email/welcome.html', 
-        username=username,
-        login_url=url_for('login', _external=True),
-        current_year=datetime.now().year
-    )
-    msg = Message(
-        subject='Welcome to CineVerse! Account created successfully',
-        recipients=[recipient_email],
-        html=html_body
-    )
-    thr = Thread(target=send_async_email, args=[app, msg])
-    thr.daemon = True
-    thr.start()
-    return thr
+    try:
+        html_body = render_template(
+            'email/welcome.html', 
+            username=username,
+            login_url=url_for('login', _external=True),
+            current_year=datetime.now().year
+        )
+        msg = Message(
+            subject='Welcome to CineVerse! Account created successfully',
+            recipients=[recipient_email],
+            html=html_body
+        )
+        thr = Thread(target=send_async_email, args=[app, msg])
+        thr.daemon = True
+        thr.start()
+        print(f'Email thread started for {recipient_email}')
+        return thr
+    except Exception as e:
+        print(f'Failed to prepare registration email: {e}')
+        return None
 
 
 # Context processor for current year
