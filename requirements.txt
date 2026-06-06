@@ -21,6 +21,7 @@ packaging==26.2
 PyMySQL==1.2.0
 python-dotenv==1.2.2
 requests==2.34.2
+resend==2.30.1
 SQLAlchemy==2.0.50
 sqlparse==0.5.5
 typing_extensions==4.15.0

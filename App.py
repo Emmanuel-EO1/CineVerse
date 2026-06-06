@@ -4,7 +4,7 @@ import dj_database_url
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
-from flask_mail import Mail, Message
+import resend
 from threading import Thread 
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
@@ -26,15 +26,9 @@ TMDB_API_KEY = os.getenv('TMDB_API_KEY')
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
-#--- FLASK-MAIL CONFIG ---
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
-
-mail = Mail(app)
+#--- RESEND EMAIL CONFIG ---
+resend.api_key = os.getenv('RESEND_API_KEY')
+MAIL_FROM = os.getenv('MAIL_USERNAME', 'onboarding@resend.dev')
 
 
 #2. Database Setup
@@ -131,13 +125,18 @@ def get_movie_details(movie_id):
     
 
 #--- Function to send email ---
-def send_async_email(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-            print(f'Async registration email sent successfully to {msg.recipients[0]}')
-        except Exception as e:
-            print(f'Failed to send async registration email: {e}')
+def send_async_email(recipient_email, html_body):
+    try:
+        params = {
+            "from": f"CineVerse <{MAIL_FROM}>",
+            "to": [recipient_email],
+            "subject": "Welcome to CineVerse! Account created successfully",
+            "html": html_body,
+        }
+        resend.Emails.send(params)
+        print(f'Registration email sent successfully to {recipient_email}')
+    except Exception as e:
+        print(f'Failed to send registration email: {e}')
 
 def send_registration_email(recipient_email, username):
     try:
@@ -147,12 +146,7 @@ def send_registration_email(recipient_email, username):
             login_url=url_for('login', _external=True),
             current_year=datetime.now().year
         )
-        msg = Message(
-            subject='Welcome to CineVerse! Account created successfully',
-            recipients=[recipient_email],
-            html=html_body
-        )
-        thr = Thread(target=send_async_email, args=[app, msg])
+        thr = Thread(target=send_async_email, args=[recipient_email, html_body])
         thr.daemon = True
         thr.start()
         print(f'Email thread started for {recipient_email}')
